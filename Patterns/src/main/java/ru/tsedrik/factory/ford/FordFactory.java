@@ -2,7 +2,7 @@ package ru.tsedrik.factory.ford;
 
 import ru.tsedrik.factory.*;
 
-public class FordFactory implements CarFactory {
+public class FordFactory extends AbstractCarFactory {
 
     @Override
     public Body createBody() {

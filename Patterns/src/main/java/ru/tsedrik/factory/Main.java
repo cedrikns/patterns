@@ -8,21 +8,17 @@ public class Main {
 //        CarFactory factory = new VolvoFactory();
 //        CarFactory factory = new BmwFactory();
         CarFactory factory = new FordFactory();
-        createCar(factory);
+        Car car = factory.createCar();
+        printCarDescription(car);
 
     }
 
-    public static void createCar(CarFactory factory){
+    public static void printCarDescription(Car car){
         System.out.println("Создана машина со следующими характеристикаи:");
-        Body body = factory.createBody();
-        System.out.println(body.getDescription());
-        Engine engine = factory.createEngine();
-        System.out.println(engine.getDescription());
-        Salon salon = factory.createSalon();
-        System.out.println(salon.getDescription());
-        Suspension suspension = factory.createSuspension();
-        System.out.println(suspension.getDescription());
-        Wheel wheel = factory.createWheel();
-        System.out.println(wheel.getDescription());
+        System.out.println(car.getBody().getDescription());
+        System.out.println(car.getEngine().getDescription());
+        System.out.println(car.getSalon().getDescription());
+        System.out.println(car.getSuspension().getDescription());
+        System.out.println(car.getWheel().getDescription());
     }
 }
