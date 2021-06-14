@@ -8,10 +8,8 @@ public class EmailBuilder {
         return new FromOrToBuilder(subject);
     }
 
-    public interface IFromOrToBuilder {
+    public interface IFromOrToBuilder extends IToBuilder{
         IFirstToBuilder from(String from);
-        IToOrCopyToOrContentBuilder to(String to);
-        IToOrCopyToOrContentBuilder toAll(List<String> toAll);
     }
 
     public interface IFirstToBuilder{
@@ -19,22 +17,28 @@ public class EmailBuilder {
         IToOrCopyToOrContentBuilder toAll(List<String> toAll);
     }
 
-    public interface IToOrCopyToOrContentBuilder{
-        IToOrCopyToOrContentBuilder to(String to);
-        IToOrCopyToOrContentBuilder toAll(List<String> toAll);
-        ICopyToOrContentBuilder copyTo(String copyTo);
-        ICopyToOrContentBuilder copyToAll(List<String> copyToAll);
-        IFinalBuilder content(Content content);
+    public interface IToOrCopyToOrContentBuilder extends IToBuilder, ICopyToBuilder, IContentBuilder{
     }
 
-    public interface ICopyToOrContentBuilder{
-        ICopyToOrContentBuilder copyTo(String copyTo);
-        ICopyToOrContentBuilder copyToAll(List<String> copyToAll);
-        IFinalBuilder content(Content content);
+    public interface ICopyToOrContentBuilder extends ICopyToBuilder, IContentBuilder{
     }
 
     public interface IFinalBuilder{
         Email build();
+    }
+
+    public interface IToBuilder{
+        IToOrCopyToOrContentBuilder to(String to);
+        IToOrCopyToOrContentBuilder toAll(List<String> toAll);
+    }
+
+    public interface ICopyToBuilder{
+        ICopyToOrContentBuilder copyTo(String copyTo);
+        ICopyToOrContentBuilder copyToAll(List<String> copyToAll);
+    }
+
+    public interface IContentBuilder{
+        IFinalBuilder content(Content content);
     }
 
     private class FromOrToBuilder implements IFromOrToBuilder{
