@@ -2,96 +2,78 @@ package ru.tsedrik.adapter.orm;
 
 import ru.tsedrik.adapter.DbEntity;
 import ru.tsedrik.adapter.DbUserEntity;
-import ru.tsedrik.adapter.DbUserInfoEntity;
 import ru.tsedrik.adapter.orm.first.FirstOrm;
 import ru.tsedrik.adapter.orm.second.SecondOrm;
 
-import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
-public class CommonOrmAdapter implements CommonOrm<DbEntity>{
+public class CommonOrmAdapter<O, T extends DbEntity> implements CommonOrm<T>{
 
-    private Class aClass;
-    private FirstOrm<DbEntity> firstOrm;
-    private SecondOrm secondOrm;
+    private O orm;
+    private Class<T> eClass;
 
-    public CommonOrmAdapter(Class aClass, Object orm){
-
-        if (aClass.equals(FirstOrm.class)){
-            firstOrm = (FirstOrm<DbEntity>) orm;
-        } else if (aClass.equals(SecondOrm.class)){
-            secondOrm = (SecondOrm)orm;
-        } else {
-            throw new IllegalArgumentException("Unknown orm class");
-        }
-        this.aClass = aClass;
+    public CommonOrmAdapter(O orm, Class eClass) {
+        this.orm = orm;
+        this.eClass = eClass;
     }
 
     @Override
-    public void create(DbEntity entity) {
-        if (aClass.equals(FirstOrm.class)){
-            firstOrm.create(entity);
+    public void create(T entity) {
+        if (orm instanceof FirstOrm){
+            ((FirstOrm) orm).create(entity);
+        } else if (orm instanceof SecondOrm){
+            getEntities().add(entity);
         } else {
-            getEntities(entity.getClass()).add(entity);
+            throw new RuntimeException("Unknown orm class: " + orm.getClass().getName());
         }
     }
 
     @Override
-    public DbEntity read(Long id) {
-        if (aClass.equals(FirstOrm.class)){
-            return firstOrm.read(id.intValue());
+    public T read(Long id) {
+        if (orm instanceof FirstOrm){
+            return (T) ((FirstOrm) orm).read(id.intValue());
+        } else if (orm instanceof SecondOrm){
+            return getEntities().stream()
+                    .filter(e -> e.getId().equals(id))
+                    .findFirst().get();
         } else {
-            return getEntityById(id).orElseThrow(() -> new RuntimeException("Entity with id = " + id + " wasn't found."));
+            throw new RuntimeException("Unknown orm class: " + orm.getClass().getName());
         }
     }
 
     @Override
-    public void update(DbEntity entity) {
-        if (aClass.equals(FirstOrm.class)){
-            firstOrm.update(entity);
-        } else {
-            Set<DbEntity> entities = getEntities(entity.getClass());
-            Optional<DbEntity> updatedEntity = getEntityById(entity.getId());
-            if (updatedEntity.isPresent()){
-                entities.remove(updatedEntity);
-            } else {
-                throw new RuntimeException("There is not entity with id = " + entity.getId());
-            }
+    public void update(T entity) {
+        if (orm instanceof FirstOrm){
+            ((FirstOrm) orm).update(entity);
+        } else if (orm instanceof SecondOrm){
+            Set<T> entities = getEntities();
+            entities.removeIf(e -> e.getId().equals(entity.getId()));
             entities.add(entity);
+        } else {
+            throw new RuntimeException("Unknown orm class: " + orm.getClass().getName());
         }
     }
 
     @Override
-    public void delete(DbEntity entity) {
-        if (aClass.equals(FirstOrm.class)){
-            firstOrm.delete(entity);
+    public void delete(T entity) {
+        if (orm instanceof FirstOrm){
+            ((FirstOrm) orm).delete(entity);
+        } else if (orm instanceof SecondOrm){
+            getEntities().remove(entity);
         } else {
-            getEntities(entity.getClass()).remove(entity);
+            throw new RuntimeException("Unknown orm class: " + orm.getClass().getName());
         }
     }
 
-    private Set<DbEntity> getEntities(Class<? extends DbEntity> eClass){
-        Set<DbEntity> entities = new HashSet<>();
+    private Set<T> getEntities(){
+        Set<T> entities;
         if (eClass.equals(DbUserEntity.class)){
-            for (DbEntity entity: secondOrm.getContext().getUsers()){
-                entities.add(entity);
-            }
-        } else if (eClass.equals(DbUserInfoEntity.class)){
-            for (DbEntity entity: secondOrm.getContext().getUserInfos()){
-                entities.add(entity);
-            }
+            entities = (Set<T>) ((SecondOrm) orm).getContext().getUsers();
+        } else if (eClass.equals(DbUserEntity.class)){
+            entities = (Set<T>) ((SecondOrm) orm).getContext().getUserInfos();
         } else {
-            throw new IllegalArgumentException("Unknown class for entity");
+            throw new RuntimeException("Unknown entity class: " + eClass.getName());
         }
         return entities;
-    }
-
-    private Optional<DbEntity> getEntityById(Long id){
-        Stream<Set<DbEntity>> stream = Stream.of(getEntities(DbUserEntity.class), getEntities(DbUserInfoEntity.class));
-        return stream.flatMap(s -> s.stream())
-                .filter(e -> e.getId().equals(id))
-                .findFirst();
     }
 }
